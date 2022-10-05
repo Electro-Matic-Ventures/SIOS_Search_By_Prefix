@@ -2,6 +2,7 @@ from QtBrowseGroup import QtBrowseGroup
 from QtLabeledInputGroup import QtLabeledInputGroup
 from QtExecuteButton import QtExecuteButton
 from QtStatusMessage import QtStatusMessage
+from QtLabeledInputWithDescriptionGroup import QtLabeledInputWithDescriptionGroup
 from ScrapeSIOS import ScrapeSIOS
 from ListExtension import ListExtension
 from FileManager import FileManager
@@ -10,13 +11,15 @@ from Log import Log
 from PySide6.QtCore import Slot, Qt
 from PySide6.QtWidgets import QMainWindow, QApplication, QWidget, QVBoxLayout, QVBoxLayout, QFileDialog, QSizePolicy
 from sys import exit, argv
+from StringExtension import StringExtension
+from logging import getLogger
 
 
 class GUI(QMainWindow):
 
     def __init__(self):
         # SIZE CONSTANTS
-        self.__WINDOW_HEIGHT = 300
+        self.__WINDOW_HEIGHT = 400
         self.__WINDOW_WIDTH = 400
         self.__INTERSTITIAL_SPACING = 15
         # MAIN WINDOW SETUP
@@ -29,6 +32,7 @@ class GUI(QMainWindow):
         self.setWindowTitle("Siemens SIOS Prefix Scraper")
         # WIDGETS
         self.enter_prefix_group = QtLabeledInputGroup('Enter Prefix')
+        self.page_dwell_group = QtLabeledInputWithDescriptionGroup('Page Dwell', 'The amount of time the application waits after each page is loaded before beginning scraping. Increasing may result in more stable scraping sessions.')
         self.output_path_group = QtBrowseGroup('Select Path for Output Files')
         self.execute_button = QtExecuteButton()    
         self.status_message = QtStatusMessage()
@@ -37,6 +41,7 @@ class GUI(QMainWindow):
         self.__configure_layout()
         self.__add_widgets_to_layout()
         self.__set_widget_sizes()
+        self.page_dwell_group.description.setWordWrap(True)
         self.central_widget.setLayout(self.__layout)
         # CONNECTIONS
         self.__make_connections()
@@ -58,6 +63,7 @@ class GUI(QMainWindow):
 
     def __add_widgets_to_layout(self)-> None:
         self.__layout.addWidget(self.enter_prefix_group, 1, Qt.AlignLeft)
+        self.__layout.addWidget(self.page_dwell_group, 1, Qt.AlignLeft)
         self.__layout.addWidget(self.output_path_group, 1, Qt.AlignLeft)
         self.__layout.addWidget(self.execute_button, 1, Qt.AlignLeft)
         self.__layout.addWidget(self.status_message, 1, Qt.AlignLeft)
@@ -65,6 +71,7 @@ class GUI(QMainWindow):
 
     def __set_widget_sizes(self)-> None:
         self.__set_enter_prefix_group_size()
+        self.__set_page_dwell_group_size()
         self.__set_output_path_group_size()
         self.__set_execute_button_size()
         self.__set_status_message_size()
@@ -73,6 +80,11 @@ class GUI(QMainWindow):
     def __set_enter_prefix_group_size(self)-> None:
         width = self.__WINDOW_WIDTH - 2 * self.__INTERSTITIAL_SPACING
         self.enter_prefix_group.setFixedWidth(width)
+        return
+
+    def __set_page_dwell_group_size(self)-> None:
+        width = self.__WINDOW_WIDTH - 2 * self.__INTERSTITIAL_SPACING
+        self.page_dwell_group.setFixedHeight(100)
         return
 
     def __set_output_path_group_size(self)-> None:
@@ -138,9 +150,17 @@ class GUI(QMainWindow):
         self.status_message.message.setText(f'Scraping Completed at {Timestamp().one_true_format()}')
         return
 
-    def __notify_exception(self, exception_text:Exception, output_path:str='./')-> None:
-        Log(output_path).add_event(f'{exception_text}')
-        self.status_message.message.setText(f'{exception_text}')
+    def __notify_exception(self, exception:Exception, output_path:str='./')-> None:
+        Log(output_path).add_event(f'{exception}')
+        self.status_message.message.setText(f'{getLogger().exception(exception)}')
+        return
+
+    def __get_page_dwell(self)->float:
+        text = self.page_dwell_group.input.text()
+        if len(text) == 0:
+            return 0.0
+        return StringExtension().string_number_to_float(text)
+
 
     @Slot()
     def __output_path_selection_button_action(self)-> None:
@@ -157,21 +177,24 @@ class GUI(QMainWindow):
                 return
             # GET FORM VARIABLES
             prefix = self.enter_prefix_group.input.text()
+            page_dwell = self.__get_page_dwell()
             output_path = self.output_path_group.path_display.text()
             timestamp_ = Timestamp().one_true_filesave()
-            save_file_name = f'{output_path}/sios_prefix_{prefix}_scraped_{timestamp_}.csv'
+            save_file_name = f'{output_path}/sios_prefix_{StringExtension().just_alpha_numeric(prefix)}_scraped_{timestamp_}.csv'
             # INSTATIATE SCRAPING APPLICATION
-            scraper = ScrapeSIOS()
+            scraper = ScrapeSIOS(page_dwell, save_file_name)
             # SCRAPE SIOS
             scraper.search(prefix)
-            # TRANSFORM DATA
-            output = ListExtension().to_string_one_element_per_line(scraper.part_numbers)
-            # NO DATA FOUND
-            if self.__return_data_invalid(output):
-                self.__notifiy_invalid_form_data()
-                return
-            # SAVE TO FILE
-            FileManager().save_to_file(save_file_name, output)
+            # 2022/10/04
+            # MOVED INSIDE OF ScrapeSIOS DUE TO SIOS PAGE INSTABLILITY AROUND 40K PART NUMBERS
+            # # TRANSFORM DATA
+            # output = ListExtension().to_string_one_element_per_line(scraper.part_numbers)
+            # # NO DATA FOUND
+            # if self.__return_data_invalid(output):
+            #     self.__notifiy_invalid_form_data()
+            #     return
+            # # SAVE TO FILE
+            # FileManager().save_to_file(save_file_name, output)
             # SUCCESSFUL RUN
             self.__notify_successful_run(output_path)
             return

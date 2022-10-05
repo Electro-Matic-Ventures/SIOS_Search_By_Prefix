@@ -1,0 +1,28 @@
+2022-09-30 20:59:23; Message: chrome not reachable
+  (Session info: chrome=105.0.5195.127)
+Stacktrace:
+Backtrace:
+	Ordinal0 [0x0032DF13+2219795]
+	Ordinal0 [0x002C2841+1779777]
+	Ordinal0 [0x001D4100+803072]
+	Ordinal0 [0x001C9BF2+760818]
+	Ordinal0 [0x001BCD35+707893]
+	Ordinal0 [0x001C1122+725282]
+	Ordinal0 [0x001C5699+743065]
+	Ordinal0 [0x001D5610+808464]
+	Ordinal0 [0x0022E93A+1173818]
+	Ordinal0 [0x0021E616+1107478]
+	Ordinal0 [0x001F7F89+950153]
+	Ordinal0 [0x001F8F56+954198]
+	GetHandleVerifier [0x00622CB2+3040210]
+	GetHandleVerifier [0x00612BB4+2974420]
+	GetHandleVerifier [0x003C6A0A+565546]
+	GetHandleVerifier [0x003C5680+560544]
+	Ordinal0 [0x002C9A5C+1808988]
+	Ordinal0 [0x002CE3A8+1827752]
+	Ordinal0 [0x002CE495+1827989]
+	Ordinal0 [0x002D80A4+1867940]
+	(No symbol) [0x7618FA29]
+	RtlGetAppContainerNamedObjectPath [0x777C7A9E+286]
+	RtlGetAppContainerNamedObjectPath [0x777C7A6E+238]
+
